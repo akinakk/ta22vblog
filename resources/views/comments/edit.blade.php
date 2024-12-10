@@ -1,16 +1,31 @@
 @extends('partials.layout')
+@section('title', 'Edit Comment #' . $comment->id)
 @section('content')
-<div class="container">
-    <h1>Edit Comment</h1>
-    <form action="{{ route('comments.update', $comment) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div class="mb-3">
-            <label for="content" class="form-label">Content</label>
-            <textarea name="content" id="content" class="form-control" rows="3"
-                required>{{ $comment->content }}</textarea>
+<div class="container mx-auto my-8">
+    <a href="{{ url()->previous() }}" class="btn btn-primary mb-4">Back</a>
+    <div class="card bg-base-300 shadow-xl w-1/2 mx-auto">
+        <div class="card-body">
+            <form action="{{ route('comments.update', ['comment' => $comment]) }}" method="POST">
+                @csrf
+                @method('PUT')
+
+                <label class="form-control w-full">
+                    <div class="label">
+                        <span class="label-text">Content</span>
+                    </div>
+                    <textarea name="content" id="content" rows="6"
+                        class="textarea textarea-bordered @error('content') textarea-error @enderror w-full" required
+                        placeholder="Update your comment...">{{ old('content') ?? $comment->content }}</textarea>
+                    <div class="label">
+                        @error('content')
+                            <span class="label-text-alt text-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </label>
+
+                <button type="submit" class="btn btn-primary mt-4">Uоpdate Comment</button>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary">Update</button>
-    </form>
+    </div>
 </div>
 @endsection

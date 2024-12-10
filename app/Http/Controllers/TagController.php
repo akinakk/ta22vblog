@@ -5,28 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\Tag;
 use App\Http\Requests\StoreTagRequest;
 use App\Http\Requests\UpdateTagRequest;
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class TagController extends Controller
 {
     public function index()
     {
-        $tags = Tag::all();
-        return response()->json($tags);
+        $tags = Tag::latest()->paginate(20);
+        return view('tags.index', compact('tags'));
     }
 
     public function create()
     {
-        return view('tags.create');
+        $posts = Post::all();
+        return view('tags.create', compact('posts'));
     }
 
-    public function store(StoreTagRequest $request)
+    public function store(Request $request)
     {
-        $validated = $request->validated();
-        $tag = Tag::create($validated);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:tags',
+            'posts' => 'array',
+            'posts.*' => 'exists:posts,id',
+        ]);
 
-        return redirect()->route('tags.index')
-            ->with('success', 'tag created successfully');
+        $tag = Tag::create(['name' => $validated['name']]);
+
+        if (!empty($validated['posts'])) {
+            $tag->posts()->attach($validated['posts']);
+        }
+
+        return redirect()->route('tags.index')->with('success', 'Tag created and attached to posts successfully.');
     }
 
     public function show(Tag $tag)
@@ -39,13 +49,23 @@ class TagController extends Controller
         return view('tags.edit', compact('tag'));
     }
 
-    public function update(UpdateTagRequest $request, Tag $tag)
+    public function update(Request $request, Post $post)
     {
-        $validated = $request->validated();
-        $tag->update($validated);
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'tags' => 'array|exists:tags,id',
+        ]);
 
-        return redirect()->route('tags.index')
-            ->with('success', 'tag updated successfully');
+        $post->update([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+        ]);
+
+        $post->tags()->sync($validated['tags'] ?? []);
+
+        return redirect()->route('posts.index')
+            ->with('success', 'Post updated successfully.');
     }
     public function destroy(Tag $tag)
     {
